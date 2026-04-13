@@ -52,11 +52,3 @@ From the repository root:
 ```bash
 npm run build
 ```
-
-## Daily command reference
-
-- Start both apps: npm run dev
-- Start backend only: npm run dev:backend
-- Start frontend only: npm run dev:frontend
-- Build both: npm run build
-- Reset and seed DB: npm run db:reboot
