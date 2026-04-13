@@ -1,0 +1,76 @@
+###
+# REST Client: Auth endpoints
+# POST /auth/register, POST /auth/login, GET /auth/me
+
+@baseUrl = http://localhost:3000
+@adminEmail = admin1@babyfoot.dev
+@adminPassword = AdminPass123!
+@playerEmail = liam.1@babyfoot.dev
+@playerPassword = PlayerPass123!
+
+### Login as admin (run this first to populate @adminToken)
+# @name loginAdmin
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+###
+@adminToken = {{loginAdmin.response.body.data.token}}
+
+### Login as player (run this first to populate @playerToken)
+# @name loginPlayer
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{playerEmail}}",
+  "password": "{{playerPassword}}"
+}
+
+###
+@playerToken = {{loginPlayer.response.body.data.token}}
+
+### Register a new player account
+# @name registerPlayer
+POST {{baseUrl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "name": "Rest Client User",
+  "email": "restclient.user+{{$timestamp}}@babyfoot.dev",
+  "password": "PlayerPass123!",
+  "teamId": 1
+}
+
+### Get current admin profile
+GET {{baseUrl}}/api/v1/auth/me
+Authorization: Bearer {{adminToken}}
+
+### Get current player profile
+GET {{baseUrl}}/api/v1/auth/me
+Authorization: Bearer {{playerToken}}
+
+### Login with invalid credentials (should be 400)
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "invalid@babyfoot.dev",
+  "password": "WrongPassword123!"
+}
+
+### Validation failure: bad email format (should return 400)
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "not-an-email",
+  "password": "short"
+}
+
+### Get auth/me without token (should be 401)
+GET {{baseUrl}}/api/v1/auth/me

@@ -1,0 +1,20 @@
+{
+  "name": "tournament-manager",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "npm run --workspace backend --workspace frontend --if-present --parallel dev",
+    "dev:backend": "npm run dev -w backend",
+    "dev:frontend": "npm run dev -w frontend",
+    "build": "npm run --workspaces --if-present build",
+    "build:backend": "npm run build -w backend",
+    "build:frontend": "npm run build -w frontend",
+    "db:reset": "npm run db:reset -w backend",
+    "db:seed": "npm run db:seed -w backend",
+    "db:reboot": "npm run db:reboot -w backend"
+  }
+}

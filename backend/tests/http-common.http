@@ -1,0 +1,38 @@
+###
+# REST Client: Common setup and auth flows
+# Variables and login tokens used by all endpoint test files
+
+@baseUrl = http://localhost:3000
+@adminEmail = admin1@babyfoot.dev
+@adminPassword = AdminPass123!
+@playerEmail = liam.1@babyfoot.dev
+@playerPassword = PlayerPass123!
+
+### Health check
+GET {{baseUrl}}/health
+
+### Login as admin (token saved as adminToken)
+# @name loginAdmin
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+###
+@adminToken = {{loginAdmin.response.body.data.token}}
+
+### Login as player (token saved as playerToken)
+# @name loginPlayer
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{playerEmail}}",
+  "password": "{{playerPassword}}"
+}
+
+###
+@playerToken = {{loginPlayer.response.body.data.token}}

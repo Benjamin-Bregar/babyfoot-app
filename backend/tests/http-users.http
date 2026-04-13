@@ -1,0 +1,97 @@
+###
+# REST Client: User endpoints
+# GET /users, GET /users/:id, POST /users, PATCH /users/:id, DELETE /users/:id, GET /users/me/tournaments
+
+@baseUrl = http://localhost:3000
+@adminEmail = admin1@babyfoot.dev
+@adminPassword = AdminPass123!
+@playerEmail = liam.1@babyfoot.dev
+@playerPassword = PlayerPass123!
+
+### Login as admin (run this first)
+# @name loginAdmin
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+###
+@adminToken = {{loginAdmin.response.body.data.token}}
+
+### Login as player (run this first)
+# @name loginPlayer
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{playerEmail}}",
+  "password": "{{playerPassword}}"
+}
+
+###
+@playerToken = {{loginPlayer.response.body.data.token}}
+
+### Admin: list users
+GET {{baseUrl}}/api/v1/users?page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Player: list users (should be forbidden 403)
+GET {{baseUrl}}/api/v1/users?page=1&limit=10
+Authorization: Bearer {{playerToken}}
+
+### Admin: get user by id
+GET {{baseUrl}}/api/v1/users/1
+Authorization: Bearer {{adminToken}}
+
+### Player: read own tournaments
+GET {{baseUrl}}/api/v1/users/me/tournaments
+Authorization: Bearer {{playerToken}}
+
+### Admin: create user
+# @name createUser
+POST {{baseUrl}}/api/v1/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Created By Admin",
+  "email": "created.by.admin+{{$timestamp}}@babyfoot.dev",
+  "password": "AdminPass123!",
+  "role": "player",
+  "teamId": 1
+}
+
+###
+@createdUserId = {{createUser.response.body.data.id}}
+
+### Admin: update created user
+PATCH {{baseUrl}}/api/v1/users/{{createdUserId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated By Admin",
+  "teamId": 2
+}
+
+### Admin: delete created user
+DELETE {{baseUrl}}/api/v1/users/{{createdUserId}}
+Authorization: Bearer {{adminToken}}
+
+### Auth required check (should be 401)
+GET {{baseUrl}}/api/v1/users/1
+
+### Player: create user (should be 403 forbidden)
+POST {{baseUrl}}/api/v1/users
+Authorization: Bearer {{playerToken}}
+Content-Type: application/json
+
+{
+  "name": "Should Fail",
+  "email": "shouldfail@babyfoot.dev",
+  "password": "PlayerPass123!",
+  "role": "player"
+}

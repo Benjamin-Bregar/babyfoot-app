@@ -1,0 +1,190 @@
+###
+# REST Client tests for current backend endpoints
+# Run from VS Code REST Client extension.
+
+@baseUrl = http://localhost:3000
+@adminEmail = admin1@babyfoot.dev
+@adminPassword = AdminPass123!
+@playerEmail = liam.1@babyfoot.dev
+@playerPassword = PlayerPass123!
+
+### Health check
+GET {{baseUrl}}/health
+
+### Login as admin (token saved as adminToken)
+# @name loginAdmin
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+###
+@adminToken = {{loginAdmin.response.body.data.token}}
+
+### Login as player (token saved as playerToken)
+# @name loginPlayer
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{playerEmail}}",
+  "password": "{{playerPassword}}"
+}
+
+###
+@playerToken = {{loginPlayer.response.body.data.token}}
+
+### Get current admin profile
+GET {{baseUrl}}/api/v1/auth/me
+Authorization: Bearer {{adminToken}}
+
+### Get current player profile
+GET {{baseUrl}}/api/v1/auth/me
+Authorization: Bearer {{playerToken}}
+
+### Register a new player account
+# @name registerPlayer
+POST {{baseUrl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "name": "Rest Client User",
+  "email": "restclient.user+{{$timestamp}}@babyfoot.dev",
+  "password": "PlayerPass123!",
+  "teamId": 1
+}
+
+### Admin: list users
+GET {{baseUrl}}/api/v1/users?page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Player: list users (should be forbidden)
+GET {{baseUrl}}/api/v1/users?page=1&limit=10
+Authorization: Bearer {{playerToken}}
+
+### Admin: get user by id
+GET {{baseUrl}}/api/v1/users/1
+Authorization: Bearer {{adminToken}}
+
+### Player: read own tournaments
+GET {{baseUrl}}/api/v1/users/me/tournaments
+Authorization: Bearer {{playerToken}}
+
+### Admin: create user
+# @name createUser
+POST {{baseUrl}}/api/v1/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Created By Admin",
+  "email": "created.by.admin+{{$timestamp}}@babyfoot.dev",
+  "password": "AdminPass123!",
+  "role": "player",
+  "teamId": 1
+}
+
+###
+@createdUserId = {{createUser.response.body.data.id}}
+
+### Admin: update created user
+PATCH {{baseUrl}}/api/v1/users/{{createdUserId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated By Admin",
+  "teamId": 2
+}
+
+### Admin: delete created user
+DELETE {{baseUrl}}/api/v1/users/{{createdUserId}}
+Authorization: Bearer {{adminToken}}
+
+### Auth required check (should be 401)
+GET {{baseUrl}}/api/v1/users/1
+
+### List teams as admin
+GET {{baseUrl}}/api/v1/teams?page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### List teams as player
+GET {{baseUrl}}/api/v1/teams?page=1&limit=10
+Authorization: Bearer {{playerToken}}
+
+### Get team by id
+GET {{baseUrl}}/api/v1/teams/1
+Authorization: Bearer {{adminToken}}
+
+### Admin: create team
+# @name createTeam
+POST {{baseUrl}}/api/v1/teams
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "REST Team {{$timestamp}}"
+}
+
+###
+@createdTeamId = {{createTeam.response.body.data.id}}
+
+### Admin: update team
+PATCH {{baseUrl}}/api/v1/teams/{{createdTeamId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "REST Team Updated {{$timestamp}}"
+}
+
+### Admin: delete team
+DELETE {{baseUrl}}/api/v1/teams/{{createdTeamId}}
+Authorization: Bearer {{adminToken}}
+
+### List tournaments (public)
+GET {{baseUrl}}/api/v1/tournaments?page=1&limit=10
+
+### Get tournament by id (public)
+GET {{baseUrl}}/api/v1/tournaments/1
+
+### Admin: create tournament
+# @name createTournament
+POST {{baseUrl}}/api/v1/tournaments
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "REST Cup {{$timestamp}}",
+  "startDate": "2026-07-01",
+  "endDate": "2026-07-10",
+  "description": "Tournament created from api.http"
+}
+
+###
+@createdTournamentId = {{createTournament.response.body.data.id}}
+
+### Admin: update tournament
+PATCH {{baseUrl}}/api/v1/tournaments/{{createdTournamentId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "description": "Updated from api.http"
+}
+
+### Admin: delete tournament
+DELETE {{baseUrl}}/api/v1/tournaments/{{createdTournamentId}}
+Authorization: Bearer {{adminToken}}
+
+### Validation failure example (should return 400)
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "not-an-email",
+  "password": "short"
+}

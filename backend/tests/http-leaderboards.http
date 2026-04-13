@@ -1,0 +1,97 @@
+###
+# REST Client: Leaderboard endpoints
+# GET /tournaments/:id/leaderboard and GET /leaderboards/players/global
+
+@baseUrl = http://localhost:3000
+@adminEmail = admin1@babyfoot.dev
+@adminPassword = AdminPass123!
+@playerEmail = liam.1@babyfoot.dev
+@playerPassword = PlayerPass123!
+
+### Login as admin
+# @name loginAdmin
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+###
+@adminToken = {{loginAdmin.response.body.data.token}}
+
+### Login as player
+# @name loginPlayer
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{playerEmail}}",
+  "password": "{{playerPassword}}"
+}
+
+###
+@playerToken = {{loginPlayer.response.body.data.token}}
+
+### Admin: create tournament for leaderboard checks
+# @name createLeaderboardTournament
+POST {{baseUrl}}/api/v1/tournaments
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Leaderboard Cup {{$timestamp}}",
+  "startDate": "2026-10-01",
+  "endDate": "2026-10-03",
+  "description": "Created by http-leaderboards.http"
+}
+
+###
+@leaderboardTournamentId = {{createLeaderboardTournament.response.body.data.id}}
+
+### Admin: register team 1 and team 2
+POST {{baseUrl}}/api/v1/tournaments/{{leaderboardTournamentId}}/teams
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "teamId": 1
+}
+
+###
+POST {{baseUrl}}/api/v1/tournaments/{{leaderboardTournamentId}}/teams
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "teamId": 2
+}
+
+### Admin: schedule round-robin
+POST {{baseUrl}}/api/v1/tournaments/{{leaderboardTournamentId}}/schedule/round-robin
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "intervalMinutes": 30,
+  "roundsLabelPrefix": "R"
+}
+
+### Admin: list matches for created tournament (to pick a match id manually if needed)
+GET {{baseUrl}}/api/v1/matches?tournamentId={{leaderboardTournamentId}}
+Authorization: Bearer {{adminToken}}
+
+### Tournament leaderboard (public)
+GET {{baseUrl}}/api/v1/tournaments/{{leaderboardTournamentId}}/leaderboard?sort=points&order=desc&limit=20
+
+### Global player leaderboard (public)
+GET {{baseUrl}}/api/v1/leaderboards/players/global?page=1&limit=20&sort=goals&order=desc
+
+### Player can read global leaderboard as well
+GET {{baseUrl}}/api/v1/leaderboards/players/global?page=1&limit=10
+Authorization: Bearer {{playerToken}}
+
+### Cleanup: delete tournament
+DELETE {{baseUrl}}/api/v1/tournaments/{{leaderboardTournamentId}}
+Authorization: Bearer {{adminToken}}

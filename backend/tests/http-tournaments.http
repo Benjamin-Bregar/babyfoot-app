@@ -1,0 +1,136 @@
+###
+# REST Client: Tournament endpoints
+# GET /tournaments, GET /tournaments/:id, POST /tournaments, PATCH /tournaments/:id, DELETE /tournaments/:id
+
+@baseUrl = http://localhost:3000
+@adminEmail = admin1@babyfoot.dev
+@adminPassword = AdminPass123!
+@playerEmail = liam.1@babyfoot.dev
+@playerPassword = PlayerPass123!
+
+### Login as admin (run this first)
+# @name loginAdmin
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+###
+@adminToken = {{loginAdmin.response.body.data.token}}
+
+### Login as player (run this first)
+# @name loginPlayer
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{playerEmail}}",
+  "password": "{{playerPassword}}"
+}
+
+###
+@playerToken = {{loginPlayer.response.body.data.token}}
+
+### List tournaments (public - no auth required)
+GET {{baseUrl}}/api/v1/tournaments?page=1&limit=10
+
+### Get tournament by id (public - no auth required)
+GET {{baseUrl}}/api/v1/tournaments/1
+
+### Admin: create tournament
+# @name createTournament
+POST {{baseUrl}}/api/v1/tournaments
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "REST Cup {{$timestamp}}",
+  "startDate": "2026-07-01",
+  "endDate": "2026-07-10",
+  "description": "Tournament created from http-tournaments.http"
+}
+
+###
+@createdTournamentId = {{createTournament.response.body.data.id}}
+
+### Player: register own team in tournament (works only if player's teamId matches request)
+POST {{baseUrl}}/api/v1/tournaments/{{createdTournamentId}}/teams
+Authorization: Bearer {{playerToken}}
+Content-Type: application/json
+
+{
+  "teamId": 1
+}
+
+### Admin: register team 2
+POST {{baseUrl}}/api/v1/tournaments/{{createdTournamentId}}/teams
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "teamId": 2
+}
+
+### List tournament teams (auth required)
+GET {{baseUrl}}/api/v1/tournaments/{{createdTournamentId}}/teams
+Authorization: Bearer {{adminToken}}
+
+### Admin: generate round-robin schedule
+POST {{baseUrl}}/api/v1/tournaments/{{createdTournamentId}}/schedule/round-robin
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "intervalMinutes": 45,
+  "roundsLabelPrefix": "Round"
+}
+
+### Public tournament leaderboard
+GET {{baseUrl}}/api/v1/tournaments/{{createdTournamentId}}/leaderboard?sort=points&order=desc&limit=20
+
+### Admin: update tournament description
+PATCH {{baseUrl}}/api/v1/tournaments/{{createdTournamentId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "description": "Updated from http-tournaments.http"
+}
+
+### Admin: delete tournament
+DELETE {{baseUrl}}/api/v1/tournaments/{{createdTournamentId}}
+Authorization: Bearer {{adminToken}}
+
+### Player: try to generate schedule (should be 403 forbidden)
+POST {{baseUrl}}/api/v1/tournaments/1/schedule/round-robin
+Authorization: Bearer {{playerToken}}
+Content-Type: application/json
+
+{
+  "intervalMinutes": 60
+}
+
+### Player: create tournament (should be 403 forbidden)
+POST {{baseUrl}}/api/v1/tournaments
+Authorization: Bearer {{playerToken}}
+Content-Type: application/json
+
+{
+  "name": "Forbidden Tournament",
+  "startDate": "2026-08-01",
+  "endDate": "2026-08-10"
+}
+
+### Invalid date range: endDate before startDate (should be 400)
+POST {{baseUrl}}/api/v1/tournaments
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Invalid Tournament",
+  "startDate": "2026-08-10",
+  "endDate": "2026-08-01"
+}

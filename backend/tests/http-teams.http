@@ -1,0 +1,89 @@
+###
+# REST Client: Team endpoints
+# GET /teams, GET /teams/:id, POST /teams, PATCH /teams/:id, DELETE /teams/:id
+
+@baseUrl = http://localhost:3000
+@adminEmail = admin1@babyfoot.dev
+@adminPassword = AdminPass123!
+@playerEmail = liam.1@babyfoot.dev
+@playerPassword = PlayerPass123!
+
+### Login as admin (run this first)
+# @name loginAdmin
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+###
+@adminToken = {{loginAdmin.response.body.data.token}}
+
+### Login as player (run this first)
+# @name loginPlayer
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{playerEmail}}",
+  "password": "{{playerPassword}}"
+}
+
+###
+@playerToken = {{loginPlayer.response.body.data.token}}
+
+### List teams as admin
+GET {{baseUrl}}/api/v1/teams?page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### List teams as player
+GET {{baseUrl}}/api/v1/teams?page=1&limit=10
+Authorization: Bearer {{playerToken}}
+
+### Get team by id (admin)
+GET {{baseUrl}}/api/v1/teams/1
+Authorization: Bearer {{adminToken}}
+
+### Get team by id (player)
+GET {{baseUrl}}/api/v1/teams/1
+Authorization: Bearer {{playerToken}}
+
+### Admin: create team
+# @name createTeam
+POST {{baseUrl}}/api/v1/teams
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "REST Team {{$timestamp}}"
+}
+
+###
+@createdTeamId = {{createTeam.response.body.data.id}}
+
+### Admin: update team
+PATCH {{baseUrl}}/api/v1/teams/{{createdTeamId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "REST Team Updated {{$timestamp}}"
+}
+
+### Admin: delete team
+DELETE {{baseUrl}}/api/v1/teams/{{createdTeamId}}
+Authorization: Bearer {{adminToken}}
+
+### Player: create team (should be 403 forbidden)
+POST {{baseUrl}}/api/v1/teams
+Authorization: Bearer {{playerToken}}
+Content-Type: application/json
+
+{
+  "name": "Forbidden Team"
+}
+
+### Auth required check (should be 401)
+GET {{baseUrl}}/api/v1/teams/1

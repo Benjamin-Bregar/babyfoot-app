@@ -1,0 +1,155 @@
+###
+# REST Client: Match endpoints
+# Includes match CRUD, score updates, and match-player stats
+
+@baseUrl = http://localhost:3000
+@adminEmail = admin1@babyfoot.dev
+@adminPassword = AdminPass123!
+@playerEmail = liam.1@babyfoot.dev
+@playerPassword = PlayerPass123!
+
+### Login as admin
+# @name loginAdmin
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+###
+@adminToken = {{loginAdmin.response.body.data.token}}
+
+### Login as player
+# @name loginPlayer
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{playerEmail}}",
+  "password": "{{playerPassword}}"
+}
+
+###
+@playerToken = {{loginPlayer.response.body.data.token}}
+
+### Admin: create tournament for isolated match tests
+# @name createTournamentForMatches
+POST {{baseUrl}}/api/v1/tournaments
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Match Test Cup {{$timestamp}}",
+  "startDate": "2026-09-01",
+  "endDate": "2026-09-05",
+  "description": "Created by http-matches.http"
+}
+
+###
+@matchTestTournamentId = {{createTournamentForMatches.response.body.data.id}}
+
+### Admin: register team 1 in test tournament
+POST {{baseUrl}}/api/v1/tournaments/{{matchTestTournamentId}}/teams
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "teamId": 1
+}
+
+### Admin: register team 2 in test tournament
+POST {{baseUrl}}/api/v1/tournaments/{{matchTestTournamentId}}/teams
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "teamId": 2
+}
+
+### Admin: create match with both teams
+# @name createMatch
+POST {{baseUrl}}/api/v1/matches
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "tournamentId": {{matchTestTournamentId}},
+  "matchDate": "2026-09-01T10:00:00.000Z",
+  "round": "Round 1",
+  "status": "scheduled",
+  "teamIds": [1, 2]
+}
+
+###
+@createdMatchId = {{createMatch.response.body.data.id}}
+
+### Player: list matches
+GET {{baseUrl}}/api/v1/matches?tournamentId={{matchTestTournamentId}}&page=1&limit=20
+Authorization: Bearer {{playerToken}}
+
+### Player: get created match
+GET {{baseUrl}}/api/v1/matches/{{createdMatchId}}
+Authorization: Bearer {{playerToken}}
+
+### Admin: set match score (also sets status=completed)
+PATCH {{baseUrl}}/api/v1/matches/{{createdMatchId}}/score
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "homeTeamId": 1,
+  "awayTeamId": 2,
+  "homeScore": 8,
+  "awayScore": 6
+}
+
+### Admin: create match player stats
+# @name createMatchPlayerStats
+POST {{baseUrl}}/api/v1/matches/{{createdMatchId}}/players
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "playerId": 3,
+  "goals": 5
+}
+
+###
+@createdMatchPlayerId = {{createMatchPlayerStats.response.body.data.id}}
+
+### Admin: update match player goals
+PATCH {{baseUrl}}/api/v1/matches/{{createdMatchId}}/players/3
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "goals": 6
+}
+
+### Player: list player stats for match
+GET {{baseUrl}}/api/v1/matches/{{createdMatchId}}/players
+Authorization: Bearer {{playerToken}}
+
+### Admin: remove match player stats
+DELETE {{baseUrl}}/api/v1/matches/{{createdMatchId}}/players/3
+Authorization: Bearer {{adminToken}}
+
+### Player: create match player stats (should be forbidden 403)
+POST {{baseUrl}}/api/v1/matches/{{createdMatchId}}/players
+Authorization: Bearer {{playerToken}}
+Content-Type: application/json
+
+{
+  "playerId": 4,
+  "goals": 1
+}
+
+### Admin: delete match
+DELETE {{baseUrl}}/api/v1/matches/{{createdMatchId}}
+Authorization: Bearer {{adminToken}}
+
+### Cleanup: delete test tournament
+DELETE {{baseUrl}}/api/v1/tournaments/{{matchTestTournamentId}}
+Authorization: Bearer {{adminToken}}
